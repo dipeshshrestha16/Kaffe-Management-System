@@ -3,37 +3,40 @@ session_start();
 include('config/config.php');
 include('config/checklogin.php');
 include('config/code-generator.php');
-
+//Visit codeastro.com for more projects
 check_login();
-//Add Staff
-if (isset($_POST['addStaff'])) {
+//Add Customer
+if (isset($_POST['addCustomer'])) {
     //Prevent Posting Blank Values
-    if (empty($_POST["staff_number"]) || empty($_POST["staff_name"]) || empty($_POST['staff_email']) || empty($_POST['staff_password'])) {
+    if (empty($_POST["customer_phoneno"]) || empty($_POST["customer_name"]) || empty($_POST['customer_email']) || empty($_POST['customer_password'])) {
         $err = "Blank Values Not Accepted";
     } else {
-        $staff_number = $_POST['staff_number'];
-        $staff_name = $_POST['staff_name'];
-        $staff_email = $_POST['staff_email'];
-        $staff_password = sha1(md5($_POST['staff_password']));
+        $customer_name = $_POST['customer_name'];
+        $customer_phoneno = $_POST['customer_phoneno'];
+        $customer_email = $_POST['customer_email'];
+        $customer_password = sha1(md5($_POST['customer_password'])); //Hash This 
+        $customer_id = $_POST['customer_id'];
 
         //Insert Captured information to a database table
-        $postQuery = "INSERT INTO rpos_staff (staff_number, staff_name, staff_email, staff_password) VALUES(?,?,?,?)";
+        $postQuery = "INSERT INTO rpos_customers (customer_id, customer_name, customer_phoneno, customer_email, customer_password) VALUES(?,?,?,?,?)";
         $postStmt = $mysqli->prepare($postQuery);
         //bind paramaters
-        $rc = $postStmt->bind_param('ssss', $staff_number, $staff_name, $staff_email, $staff_password);
+        $rc = $postStmt->bind_param('sssss', $customer_id, $customer_name, $customer_phoneno, $customer_email, $customer_password);
         $postStmt->execute();
         //declare a varible which will be passed to alert function
         if ($postStmt) {
-            $success = "Staff Added" && header("refresh:1; url=view_staff.php");
+            $success = "Customer Added" && header("refresh:1; url=customers.php");
         } else {
             $err = "Please Try Again Or Try Later";
         }
     }
 }
+//Visit codeastro.com for more projects
 require_once('includes/header.php');
 ?>
 
 <body>
+    <!-- For more projects: Visit codeastro.com  -->
     <!-- Sidenav -->
     <?php
     require_once('includes/sidebar.php');
@@ -61,36 +64,37 @@ require_once('includes/header.php');
                     <div class="card shadow">
                         <div class="card-header border-0">
                             <h3>Please Fill All Fields</h3>
-                        </div>
+                        </div><!-- For more projects: Visit codeastro.com  -->
                         <div class="card-body">
                             <form method="POST">
                                 <div class="form-row">
                                     <div class="col-md-6">
-                                        <label>Staff Number</label>
-                                        <input type="text" name="staff_number" class="form-control"
-                                            value="<?php echo $alpha; ?>-<?php echo $beta; ?>">
+                                        <label>Customer Name</label>
+                                        <input type="text" name="customer_name" class="form-control">
+                                        <input type="hidden" name="customer_id" value="<?php echo $cus_id; ?>"
+                                            class="form-control">
                                     </div>
                                     <div class="col-md-6">
-                                        <label>Staff Name</label>
-                                        <input type="text" name="staff_name" class="form-control" value="">
+                                        <label>Customer Phone Number</label>
+                                        <input type="text" name="customer_phoneno" class="form-control" value="">
                                     </div>
                                 </div>
                                 <hr>
                                 <div class="form-row">
                                     <div class="col-md-6">
-                                        <label>Staff Email</label>
-                                        <input type="email" name="staff_email" class="form-control" value="">
+                                        <label>Customer Email</label>
+                                        <input type="email" name="customer_email" class="form-control" value="">
                                     </div>
                                     <div class="col-md-6">
-                                        <label>Staff Password</label>
-                                        <input type="password" name="staff_password" class="form-control" value="">
+                                        <label>Customer Password</label>
+                                        <input type="password" name="customer_password" class="form-control" value="">
                                     </div>
                                 </div>
-                                <br>
+                                <br><!-- For more projects: Visit codeastro.com  -->
                                 <div class="form-row">
                                     <div class="col-md-6">
-                                        <input type="submit" name="addStaff" value="Add Staff" class="btn btn-success"
-                                            value="">
+                                        <input type="submit" name="addCustomer" value="Add Customer"
+                                            class="btn btn-success" value="">
                                     </div>
                                 </div>
                             </form>
@@ -98,7 +102,7 @@ require_once('includes/header.php');
                     </div>
                 </div>
             </div>
-            <!-- Footer -->
+            <!-- Footer --><!-- For more projects: Visit codeastro.com  -->
             <?php
             require_once('includes/footer.php');
             ?>

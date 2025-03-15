@@ -34,7 +34,7 @@ include("includes/analytics.php");
                             <div class="row">
                                 <div class="col">
                                     <h5 class="card-title text-uppercase text-muted mb-0">total Orders</h5>
-                                    <!-- <span class="h2 font-weight-bold mb-0"><?php echo $customers; ?></span> -->
+                                    <!-- <span class="h2 font-weight-bold mb-0"><?php echo $orders; ?></span> -->
                                 </div>
 
                                 <!-- For more projects: Visit codeastro.com  -->
@@ -47,7 +47,6 @@ include("includes/analytics.php");
                         </div>
                     </div>
                 </div>
-                <!-- For more projects: Visit codeastro.com  -->
                 <div class="col-xl-3 col-lg-6">
                     <div class="card card-stats mb-4 mb-xl-0">
                         <div class="card-body">
@@ -71,7 +70,7 @@ include("includes/analytics.php");
                             <div class="row">
                                 <div class="col">
                                     <h5 class="card-title text-uppercase text-muted mb-0">Bills Pending</h5>
-                                    <!-- <span class="h2 font-weight-bold mb-0"><?php echo $orders; ?></span> -->
+                                    <!-- <span class="h2 font-weight-bold mb-0"><?php echo $customers; ?></span> -->
                                 </div>
                                 <!-- <div class="col-auto">
                                     <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
