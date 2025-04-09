@@ -3,140 +3,213 @@ session_start();
 include('config/config.php');
 include('config/checklogin.php');
 check_login();
-include("includes/header.php");
-include("includes/analytics.php");
+
+// Get today's date in YYYY-MM-DD format
+$today = date('Y-m-d');
+
+// 1. Total Orders Today (total number of orders made today)
+$totalOrders = 0;
+$stmt = $mysqli->prepare("SELECT SUM(prod_qty) FROM rpos_tableorders WHERE DATE(order_time) = ?");
+$stmt->bind_param('s', $today);
+$stmt->execute();
+$stmt->bind_result($totalOrders);
+$stmt->fetch();
+$stmt->close();
+
+// 2. Available Tables (number of tables with status 'available')
+$availableTables = 0;
+$query = "SELECT COUNT(*) FROM rpos_tables WHERE status = 'available'";
+$stmt = $mysqli->prepare($query);
+if (!$stmt) {
+    die("Prepare failed: " . $mysqli->error . "<br>Query: " . $query);
+}
+$stmt->execute();
+$stmt->bind_result($availableTables);
+$stmt->fetch();
+$stmt->close();
+
+// 3. Bills Pending (total number of unpaid bills, 'occupied' tables)
+$billsPending = 0;
+$stmt = $mysqli->prepare("SELECT COUNT(DISTINCT table_id) FROM rpos_tableorders WHERE order_status = 'unpaid'");
+$stmt->execute();
+$stmt->bind_result($billsPending);
+$stmt->fetch();
+$stmt->close();
+
+// 4. Total Sales Today (sum of paid orders)
+$totalSales = 0;
+$stmt = $mysqli->prepare("SELECT SUM(prod_price * prod_qty) FROM rpos_tableorders WHERE order_status = 'paid' AND DATE(order_time) = ?");
+$stmt->bind_param('s', $today);
+$stmt->execute();
+$stmt->bind_result($totalSales);
+$stmt->fetch();
+$stmt->close();
 ?>
 
-<style>
-    .card-custom {
-        background-color: white;
-        border: 1px solid black;
-        color: black;
-    }
+<!DOCTYPE html>
+<html>
 
-    .card-custom .card-footer a {
-        color: black;
-    }
-</style>
+<?php include('includes/header.php'); ?>
 
-<div class="container-fluid px-4">
-    <h4 class="mt-2 mb-3">Dashboard</h4>
-    <!-- <div style="background-image: url(assets/img/theme/restro00.jpg); background-size: cover;"
-        class="header  pb-8 pt-5 pt-md-8"> -->
-    <span class="mask bg-gradient-dark opacity-8"></span>
-    <div class="container-fluid">
-        <div class="header-body">
-            <!-- Card stats -->
-            <div class="row">
-                <div class="col-xl-3 col-lg-6">
-                    <div class="card card-stats mb-4 mb-xl-0">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col">
-                                    <h5 class="card-title text-uppercase text-muted mb-0">total Orders</h5>
-                                    <!-- <span class="h2 font-weight-bold mb-0"><?php echo $orders; ?></span> -->
-                                </div>
+<body>
+    <?php include('includes/navbar.php'); ?>
+    <div class="main-content" id="panel">
+        <?php include('includes/sidebar.php'); ?>
 
-                                <!-- For more projects: Visit codeastro.com  -->
-                                <!-- <div class="col-auto">
-                                    <div class="icon icon-shape bg-danger text-white rounded-circle shadow">
-                                        <i class="fas fa-users"></i>
+        <div class="container-fluid mt-4">
+            <div class="header-body">
+                <div class="row">
+                    <!-- Total Orders Today -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card card-stats">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <h5 class="card-title text-uppercase text-muted mb-0">Total Orders Today</h5>
+                                        <span class="h2 font-weight-bold mb-0"><?php echo $totalOrders; ?></span>
                                     </div>
-                                </div> -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-6">
-                    <div class="card card-stats mb-4 mb-xl-0">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col">
-                                    <h5 class="card-title text-uppercase text-muted mb-0">Available Tables</h5>
-                                    <!-- <span class="h2 font-weight-bold mb-0"><?php echo $products; ?></span> -->
-                                </div>
-                                <!-- <div class="col-auto">
-                                    <div class="icon icon-shape bg-primary text-white rounded-circle shadow">
-                                        <i class="fas fa-utensils"></i>
+                                    <div class="col-auto">
+                                        <div class="icon icon-shape bg-success text-white rounded-circle shadow">
+                                            <i class="ni ni-cart"></i>
+                                        </div>
                                     </div>
-                                </div> -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-6">
-                    <div class="card card-stats mb-4 mb-xl-0">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col">
-                                    <h5 class="card-title text-uppercase text-muted mb-0">Bills Pending</h5>
-                                    <!-- <span class="h2 font-weight-bold mb-0"><?php echo $customers; ?></span> -->
-                                </div>
-                                <!-- <div class="col-auto">
-                                    <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
-                                        <i class="fas fa-shopping-cart"></i>
-                                    </div>
-                                </div> -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-6">
-                    <div class="card card-stats mb-4 mb-xl-0">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col">
-                                    <h5 class="card-title text-uppercase text-muted mb-0">Total Sales</h5>
-                                    <!-- <span class="h2 font-weight-bold mb-0">Rs.<?php echo $sales; ?></span> -->
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Available Tables -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card card-stats">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <h5 class="card-title text-uppercase text-muted mb-0">Available Tables</h5>
+                                        <span class="h2 font-weight-bold mb-0"><?php echo $availableTables; ?></span>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="icon icon-shape bg-info text-white rounded-circle shadow">
+                                            <i class="ni ni-chart-bar-32"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bills Pending -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card card-stats">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <h5 class="card-title text-uppercase text-muted mb-0">Bills Pending</h5>
+                                        <span class="h2 font-weight-bold mb-0"><?php echo $billsPending; ?></span>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
+                                            <i class="ni ni-collection"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Sales -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card card-stats">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <h5 class="card-title text-uppercase text-muted mb-0">Total Sales Today</h5>
+                                        <span
+                                            class="h2 font-weight-bold mb-0">Rs.<?php echo $totalSales ? number_format($totalSales, 2) : '0.00'; ?></span>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="icon icon-shape bg-danger text-white rounded-circle shadow">
+                                            <i class="ni ni-money-coins"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-6 col-md-12">
+                        <div class="card card-stats">
+                            <div class="card-body">
+                                <h5 class="card-title text-uppercase text-muted mb-0">Recent Orders</h5>
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Table</th>
+                                            <th>Order</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $recentOrdersQuery = "SELECT table_id, order_id, SUM(prod_price * prod_qty) AS total FROM rpos_tableorders WHERE DATE(order_time) = ? GROUP BY table_id ORDER BY order_time DESC LIMIT 5";
+                                        $stmt = $mysqli->prepare($recentOrdersQuery);
+                                        $stmt->bind_param('s', $today);
+                                        $stmt->execute();
+                                        $stmt->bind_result($table_id, $order_id, $total);
+                                        while ($stmt->fetch()) {
+                                            echo "<tr><td>$table_id</td><td>$order_id</td><td>Rs. " . number_format($total, 2) . "</td></tr>";
+                                        }
+                                        $stmt->close();
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
+
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <canvas id="salesTrendChart" width="200" height="50"></canvas>
+
+                <script>
+                    var ctx = document.getElementById('salesTrendChart').getContext('2d');
+                    var salesTrendChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                            datasets: [{
+                                label: 'Sales in Rs.',
+                                data: [1200, 1800, 1500, 1700, 2200, 2100, 2500],  // Replace with dynamic data
+                                borderColor: 'rgb(75, 192, 192)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (tooltipItem) {
+                                            return 'Rs. ' + tooltipItem.raw;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                </script>
+
+
             </div>
         </div>
+
+        <?php include('includes/footer.php'); ?>
     </div>
-    <!-- </div> -->
-    <!-- <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Dashboard</li>
-    </ol> -->
-    <!-- <div class="row">
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-custom mb-4">
-                <div class="card-body"><strong>Total Orders</strong></div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small stretched-link" href="#">View Details</a>
-                    <div class="small"><i class="fas fa-angle-right"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-custom mb-4">
-                <div class="card-body"><strong>Tables Available</strong></div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small stretched-link" href="#">View Details</a>
-                    <div class="small"><i class="fas fa-angle-right"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-custom mb-4">
-                <div class="card-body"><strong>Orders Pending</strong></div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small stretched-link" href="#">View Details</a>
-                    <div class="small"><i class="fas fa-angle-right"></i></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-custom mb-4">
-                <div class="card-body"><strong>Total Sales</strong></div>
-                <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small stretched-link" href="#">View Details</a>
-                    <div class="small"><i class="fas fa-angle-right"></i></div>
-                </div>
-            </div>
-        </div>
-    </div> -->
 
-    <?php include("includes/footer.php"); ?>
+    <?php include('includes/scripts.php'); ?>
+
+</body>
+
+</html>

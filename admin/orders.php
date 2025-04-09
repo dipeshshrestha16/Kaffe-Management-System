@@ -47,10 +47,6 @@ if (isset($_POST['add_item'])) {
     $prod_id = intval($_POST['prod_id']);
     $quantity = intval($_POST['quantity']);
 
-    // Debugging: Check form data
-    var_dump($prod_id);
-    var_dump($quantity);
-
     // Fetch product details
     $query = "SELECT * FROM rpos_products WHERE prod_id = ?";
     $stmt = $mysqli->prepare($query);
@@ -58,9 +54,6 @@ if (isset($_POST['add_item'])) {
     $stmt->execute();
     $product = $stmt->get_result()->fetch_object();
     $stmt->close();
-
-    // Debugging: Check if product is found
-    var_dump($product);
 
     if ($product) {
         // Calculate price and subtotal
@@ -74,17 +67,6 @@ if (isset($_POST['add_item'])) {
 
         if ($stmt->execute()) {
             echo "Item added successfully!<br>";
-
-            // Fetch updated order items
-            $query = "SELECT oi.*, p.prod_name FROM rpos_ordr_items oi JOIN rpos_products p ON oi.prod_id = p.prod_id WHERE oi.order_id = ?";
-            $stmt = $mysqli->prepare($query);
-            $stmt->bind_param('i', $current_order->order_id);
-            $stmt->execute();
-            $order_items = $stmt->get_result();
-            $stmt->close();
-
-            // Debugging: Check if order items are fetched
-            var_dump($order_items->fetch_all(MYSQLI_ASSOC));
 
             // Redirect to the same page to prevent form resubmission and fetch updated order items
             header("Location: orders.php?table_id=" . $table_id);
@@ -104,9 +86,6 @@ $stmt->bind_param('i', $current_order->order_id);
 $stmt->execute();
 $order_items = $stmt->get_result();
 $stmt->close();
-
-// Debugging: Check if order items are fetched
-var_dump($order_items->fetch_all(MYSQLI_ASSOC));
 
 require_once('includes/header.php');
 ?>
@@ -160,14 +139,20 @@ require_once('includes/header.php');
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($item = $order_items->fetch_object()) { ?>
+                            <?php if ($order_items->num_rows > 0): ?>
+                                <?php while ($item = $order_items->fetch_object()): ?>
+                                    <tr>
+                                        <td><?php echo $item->prod_name; ?></td>
+                                        <td><?php echo $item->quantity; ?></td>
+                                        <td>Rs.<?php echo $item->price; ?></td>
+                                        <td>Rs.<?php echo $item->subtotal; ?></td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
                                 <tr>
-                                    <td><?php echo $item->prod_name; ?></td>
-                                    <td><?php echo $item->quantity; ?></td>
-                                    <td>Rs.<?php echo $item->price; ?></td>
-                                    <td>Rs.<?php echo $item->subtotal; ?></td>
+                                    <td colspan="4">No items in the current order.</td>
                                 </tr>
-                            <?php } ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>

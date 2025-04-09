@@ -40,7 +40,7 @@
                         <div class="collapse" id="adminsCollapseAuth" aria-labelledby="headingOne"
                             data-bs-parent="#sidenavAccordionAdmins">
                             <nav class="sb-sidenav-menu-nested nav">
-                                <a class="nav-link" href="login.html">Edit Table</a>
+                                <a class="nav-link" href="manage_tables.php">Edit Table</a>
                                 <a class="nav-link" href="edit-menu.php">Edit Menu</a>
                                 <!-- <a class="nav-link" href="password.html">Edit Payment History</a> -->
                             </nav>
@@ -57,7 +57,7 @@
                     data-bs-parent="#sidenavAccordionPages">
                     <nav class="sb-sidenav-menu-nested nav">
                         <a class="nav-link" href="customers.php">Customer ID</a>
-                        <a class="nav-link" href="404.html">Payments and Bills</a>
+                        <a class="nav-link" href="history.php">Payments and Bills</a>
                         <a class="nav-link" href="500.html">Sales Record</a>
                     </nav>
                 </div>
