@@ -6,12 +6,15 @@ check_login();
 
 require_once('includes/header.php');
 
-// Query to get paid orders history grouped by table_id and customer_name
-$query = "SELECT table_id, customer_name, SUM(prod_price * prod_qty) AS total_price, MAX(order_time) AS last_order_date
-          FROM rpos_tableorders
-          WHERE order_status = 'paid'
-          GROUP BY table_id, customer_name
-          ORDER BY last_order_date DESC";
+// Query to get latest paid order sessions (latest group_id) per table + customer
+$query = "
+    SELECT table_id, customer_name, group_id, SUM(prod_price * prod_qty) AS total_price, MAX(order_time) AS last_order_date
+    FROM rpos_tableorders
+    WHERE order_status = 'paid'
+    GROUP BY table_id, customer_name, group_id
+    ORDER BY last_order_date DESC
+";
+
 
 // Prepare the query and execute it
 $stmt = $mysqli->prepare($query);
@@ -66,12 +69,13 @@ $res = $stmt->get_result();
                                             <td><?php echo $last_order_date; ?></td>
                                             <td>
                                                 <a target="_blank"
-                                                    href="print_receipt.php?table_id=<?php echo $order->table_id; ?>&customer_name=<?php echo urlencode($order->customer_name); ?>">
+                                                    href="print_receipt.php?table_id=<?php echo $order->table_id; ?>&group_id=<?php echo $order->group_id; ?>">
                                                     <button class="btn btn-sm btn-primary">
                                                         <i class="fas fa-print"></i>
                                                         Print Receipt
                                                     </button>
                                                 </a>
+
                                             </td>
                                         </tr>
                                     <?php } ?>

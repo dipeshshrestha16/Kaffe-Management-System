@@ -58,7 +58,7 @@
 
         <div class="links">
             <a href="adminlogin.php">Admin Log In</a>
-            <a href="cashierlogin">Cashier Log In</a>
+            <a href="stafflogin.php">Cashier Log In</a>
         </div>
     </div>
 </div>

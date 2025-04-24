@@ -6,15 +6,20 @@ check_login();
 
 $table_id = isset($_GET['table_id']) ? intval($_GET['table_id']) : 0;
 
+// Assign or retrieve current group_id (order session)
+if (!isset($_SESSION['group_id_' . $table_id])) {
+    $_SESSION['group_id_' . $table_id] = time(); // Unique timestamp
+}
+$group_id = $_SESSION['group_id_' . $table_id];
+
 // Handle add to order
 if (isset($_POST['add_to_order'])) {
     $table_id = $_POST['table_id'];
     $prod_id = $_POST['prod_id'];
     $prod_name = $_POST['prod_name'];
     $prod_price = $_POST['prod_price'];
-    $prod_qty = $_POST['prod_qty'];
+    $prod_qty = max(1, intval($_POST['prod_qty'])); // Prevent less than 1
 
-    // If no customer name is entered, ask for it (first time only)
     if (!isset($_SESSION['customer_name_' . $table_id])) {
         $customer_name = $_POST['customer_name'];
         $_SESSION['customer_name_' . $table_id] = $customer_name;
@@ -22,26 +27,23 @@ if (isset($_POST['add_to_order'])) {
         $customer_name = $_SESSION['customer_name_' . $table_id];
     }
 
-    // Check if product already exists in KOT
-    // Check if product already exists in KOT
-    $check = $mysqli->prepare("SELECT * FROM rpos_tableorders WHERE table_id = ? AND prod_id = ? AND order_status != 'paid'");
-    $check->bind_param('ii', $table_id, $prod_id);
+    $check = $mysqli->prepare("SELECT * FROM rpos_tableorders WHERE table_id = ? AND prod_id = ? AND order_status != 'paid' AND group_id = ?");
+    $check->bind_param('iii', $table_id, $prod_id, $group_id);
     $check->execute();
     $res = $check->get_result();
 
     if ($res->num_rows > 0) {
         $existing = $res->fetch_object();
         $new_qty = $existing->prod_qty + $prod_qty;
-        $update = $mysqli->prepare("UPDATE rpos_tableorders SET prod_qty = ? WHERE table_id = ? AND prod_id = ? AND order_status != 'paid'");
-        $update->bind_param('iii', $new_qty, $table_id, $prod_id);
+        $update = $mysqli->prepare("UPDATE rpos_tableorders SET prod_qty = ? WHERE table_id = ? AND prod_id = ? AND order_status != 'paid' AND group_id = ?");
+        $update->bind_param('iiii', $new_qty, $table_id, $prod_id, $group_id);
         $update->execute();
     } else {
-        $stmt = $mysqli->prepare("INSERT INTO rpos_tableorders (table_id, prod_id, prod_name, prod_price, prod_qty, customer_name) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param('iisdis', $table_id, $prod_id, $prod_name, $prod_price, $prod_qty, $customer_name);
+        $stmt = $mysqli->prepare("INSERT INTO rpos_tableorders (table_id, prod_id, prod_name, prod_price, prod_qty, customer_name, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param('iisdisi', $table_id, $prod_id, $prod_name, $prod_price, $prod_qty, $customer_name, $group_id);
         $stmt->execute();
     }
 
-    // Check table status and update it to 'occupied' if it's reserved or available
     $checkTableStatus = $mysqli->prepare("SELECT status FROM rpos_tables WHERE table_id = ?");
     $checkTableStatus->bind_param('i', $table_id);
     $checkTableStatus->execute();
@@ -54,25 +56,22 @@ if (isset($_POST['add_to_order'])) {
             $updateStatus->execute();
         }
     }
-
 }
 
 // Handle pay all orders
 if (isset($_POST['pay_all_orders'])) {
-    $payQuery = "UPDATE rpos_tableorders SET order_status = 'paid' WHERE table_id = ?";
+    $payQuery = "UPDATE rpos_tableorders SET order_status = 'paid' WHERE table_id = ? AND group_id = ?";
     $payStmt = $mysqli->prepare($payQuery);
-    $payStmt->bind_param('i', $table_id);
+    $payStmt->bind_param('ii', $table_id, $group_id);
     $payStmt->execute();
 
-    // Reset table status to 'available'
     $freeTable = $mysqli->prepare("UPDATE rpos_tables SET status = 'available' WHERE table_id = ?");
     $freeTable->bind_param('i', $table_id);
     $freeTable->execute();
 
-    // Clear the customer name session after payment
     unset($_SESSION['customer_name_' . $table_id]);
+    unset($_SESSION['group_id_' . $table_id]);
 
-    // Redirect to reload the page and reflect the changes
     header("Location: table_order.php?table_id=" . $table_id);
     exit();
 }
@@ -133,7 +132,8 @@ require_once('includes/header.php');
                                 <input type="hidden" name="prod_price" id="prod_price">
                                 <div class="form-group">
                                     <label>Quantity</label>
-                                    <input type="number" class="form-control" name="prod_qty" required>
+                                    <input type="number" class="form-control" name="prod_qty" min="1" value="1"
+                                        required>
                                 </div>
                                 <button type="submit" name="add_to_order" class="btn btn-success">Add to Order</button>
                             </form>
@@ -192,12 +192,14 @@ require_once('includes/header.php');
                     <form method="POST">
                         <button type="submit" name="pay_all_orders" class="btn btn-success">Pay Orders</button>
                     </form>
-                    <a target="_blank" href="print_receipt.php?table_id=<?php echo $table_id; ?>">
+                    <a target="_blank"
+                        href="print_receipt.php?table_id=<?php echo $table_id; ?>&group_id=<?php echo $_SESSION['group_id_' . $table_id]; ?>">
                         <button class="btn btn-sm btn-primary">
                             <i class="fas fa-print"></i>
                             Print Receipt
                         </button>
                     </a>
+
                 </div>
             </div>
 

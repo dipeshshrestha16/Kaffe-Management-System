@@ -135,7 +135,7 @@ $stmt->close();
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-6 col-md-12">
+                    <div class="col-xl-6 col-md-12 mt-1">
                         <div class="card card-stats">
                             <div class="card-body">
                                 <h5 class="card-title text-uppercase text-muted mb-0">Recent Orders</h5>
