@@ -1,21 +1,36 @@
 <?php
 session_start();
 include('config/config.php');
-//login 
+
 if (isset($_POST['login'])) {
     $staff_email = $_POST['staff_email'];
-    $staff_password = sha1(string: md5($_POST['staff_password'])); //double encrypt to increase security
-    $stmt = $mysqli->prepare("SELECT staff_email, staff_password, staff_id  FROM   rpos_staff WHERE (staff_email =? AND staff_password =?)"); //sql to log in user
-    $stmt->bind_param('ss', $staff_email, $staff_password); //bind fetched parameters
-    $stmt->execute(); //execute bind 
-    $stmt->bind_result($staff_email, $staff_password, $staff_id); //bind result
-    $rs = $stmt->fetch();
-    $_SESSION['staff_id'] = $staff_id;
-    if ($rs) {
-        //if its sucessfull
-        header("location:staff/index.php");
+    $staff_password = sha1(md5($_POST['staff_password'])); // Double hash for added security
+
+    $stmt = $mysqli->prepare("SELECT staff_id FROM rpos_staff WHERE staff_email = ? AND staff_password = ?");
+    $stmt->bind_param('ss', $staff_email, $staff_password);
+    $stmt->execute();
+    $stmt->bind_result($staff_id);
+
+    if ($stmt->fetch()) {
+        $_SESSION['staff_id'] = $staff_id;
+        $stmt->close();
+
+        // Check if staff has an open shift
+        $shift_date = date('Y-m-d');
+        $check_stmt = $mysqli->prepare("SELECT id FROM rpos_balances WHERE balance_date = ? AND status = 'open' LIMIT 1");
+        $check_stmt->bind_param('s', $shift_date);
+        $check_stmt->execute();
+        $check_stmt->store_result();
+
+        if ($check_stmt->num_rows > 0) {
+            header("Location: staff/index.php");
+        } else {
+            header("Location: staff/opening_balance.php");
+        }
+        $check_stmt->close();
+        exit;
     } else {
-        $err = "Incorrect Authentication Credentials ";
+        $login_error = "Invalid credentials. Please try again.";
     }
 }
 require_once('includes/header.php');
@@ -102,6 +117,5 @@ require_once('includes/header.php');
     require_once('includes/scripts.php');
     ?>
 </body>
-=
 
 </html>

@@ -42,9 +42,10 @@
                             <nav class="sb-sidenav-menu-nested nav">
                                 <a class="nav-link" href="manage_tables.php">Edit Table</a>
                                 <a class="nav-link" href="edit-menu.php">Edit Menu</a>
-                                <!-- <a class="nav-link" href="password.html">Edit Payment History</a> -->
+
                             </nav>
                         </div>
+                        <a class="nav-link" href="inventory.php">Inventory</a>
                     </nav>
                 </div>
                 <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#pagesCollapseError"
@@ -58,7 +59,7 @@
                     <nav class="sb-sidenav-menu-nested nav">
                         <a class="nav-link" href="customers.php">Customer ID</a>
                         <a class="nav-link" href="history.php">Payments and Bills</a>
-                        <a class="nav-link" href="500.html">Sales Record</a>
+                        <a class="nav-link" href="sales_report.php">Sales Record</a>
                     </nav>
                 </div>
                 <div class="sb-sidenav-menu-heading">Manage Users</div>

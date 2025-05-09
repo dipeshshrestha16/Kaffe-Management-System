@@ -44,6 +44,11 @@ if (isset($_POST['add_to_order'])) {
         $stmt->execute();
     }
 
+    // Decrease inventory stock
+    $updateStock = $mysqli->prepare("UPDATE rpos_inventory SET stock_qty = stock_qty - ? WHERE prod_id = ? AND stock_qty >= ?");
+    $updateStock->bind_param('iii', $prod_qty, $prod_id, $prod_qty);
+    $updateStock->execute();
+
     $checkTableStatus = $mysqli->prepare("SELECT status FROM rpos_tables WHERE table_id = ?");
     $checkTableStatus->bind_param('i', $table_id);
     $checkTableStatus->execute();
@@ -184,16 +189,14 @@ require_once('includes/header.php');
 
             <!-- Buttons -->
             <div class="row">
-                <!-- <div class="col-md-6" style="text-align: left;">
+                <div class="col-md-6" style="text-align: left;">
                     <a href="update_tableorders.php?table_id=<?php echo $table_id; ?>" class="btn btn-info">Update
                         Orders</a>
-                </div> -->
-                <div class="col-md-6" style="text-align: Left;">
+                </div>
+                <div class="col-md-6" style="text-align: right;">
                     <form method="POST">
                         <button type="submit" name="pay_all_orders" class="btn btn-success">Pay Orders</button>
                     </form>
-                </div>
-                <div class="col-md-6" style="text-align: right;">
                     <a target="_blank"
                         href="print_receipt.php?table_id=<?php echo $table_id; ?>&group_id=<?php echo $_SESSION['group_id_' . $table_id]; ?>">
                         <button class="btn btn-sm btn-primary">

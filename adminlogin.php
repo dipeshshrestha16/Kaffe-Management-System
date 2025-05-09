@@ -1,23 +1,45 @@
 <?php
 session_start();
 include('config/config.php');
-//login 
+
 if (isset($_POST['login'])) {
     $admin_email = $_POST['admin_email'];
-    $admin_password = sha1(md5($_POST['admin_password'])); //double encrypt to increase security
-    $stmt = $mysqli->prepare("SELECT admin_email, admin_password, admin_id  FROM   rpos_admin WHERE (admin_email =? AND admin_password =?)"); //sql to log in user
-    $stmt->bind_param('ss', $admin_email, $admin_password); //bind fetched parameters
-    $stmt->execute();
-    $stmt->bind_result($admin_email, $admin_password, $admin_id);
-    $rs = $stmt->fetch();
-    $_SESSION['admin_id'] = $admin_id;
-    if ($rs) {
+    $admin_password = sha1(md5($_POST['admin_password'])); // double hash
 
-        header("location:admin/index.php");
+    $stmt = $mysqli->prepare("SELECT admin_id FROM rpos_admin WHERE admin_email = ? AND admin_password = ?");
+    if (!$stmt) {
+        die("Login query failed: (" . $mysqli->errno . ") " . $mysqli->error);
+    }
+
+    $stmt->bind_param('ss', $admin_email, $admin_password);
+    $stmt->execute();
+    $stmt->bind_result($admin_id);
+    $rs = $stmt->fetch();
+    $stmt->close();
+
+    if ($rs) {
+        $_SESSION['admin_id'] = $admin_id;
+
+        // Check if there's already an open balance for today
+        $shift_date = date('Y-m-d');
+        $check_stmt = $mysqli->prepare("SELECT id FROM rpos_balances WHERE balance_date = ? AND status = 'open' LIMIT 1");
+        $check_stmt->bind_param('s', $shift_date);
+        $check_stmt->execute();
+        $check_stmt->store_result();
+
+        if ($check_stmt->num_rows > 0) {
+            header("Location: admin/index.php");
+        } else {
+            header("Location: admin/opening_balance.php");
+        }
+        $check_stmt->close();
+        exit;
+
     } else {
-        $err = "Incorrect Authentication Credentials ";
+        $err = "Incorrect Authentication Credentials";
     }
 }
+
 require_once('includes/header.php');
 ?>
 <style>

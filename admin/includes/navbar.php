@@ -24,6 +24,7 @@
                 <li>
                     <hr class="dropdown-divider" />
                 </li>
+                <li><a class="dropdown-item" href="closing_balance.php">Close Register</a></li>
                 <li><a class="dropdown-item" href="../index.php">Logout</a></li>
             </ul>
         </li>

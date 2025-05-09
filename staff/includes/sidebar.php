@@ -45,6 +45,8 @@
                                 <!-- <a class="nav-link" href="password.html">Edit Payment History</a> -->
                             </nav>
                         </div>
+                        <a class="nav-link" href="inventory.php">Inventory</a>
+
                     </nav>
                 </div>
                 <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#pagesCollapseError"

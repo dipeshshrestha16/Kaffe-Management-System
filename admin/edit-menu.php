@@ -27,10 +27,12 @@ if (isset($_POST['addProduct'])) {
         $postStmt->execute();
         //declare a variable which will be passed to alert function
         if ($postStmt) {
-            $success = "Product Added" && header("refresh:1; url=edit-menu.php");
+            echo "<script>alert('Product Added Successfully'); window.location.href='menu.php';</script>";
+            exit();
         } else {
             $err = "Please Try Again Or Try Later";
         }
+
     }
 }
 require_once('includes/header.php');

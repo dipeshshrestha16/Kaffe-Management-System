@@ -6,32 +6,31 @@ check_login();
 
 // Handle delete request
 if (isset($_GET['delete'])) {
-    $id = intval($_GET['delete']);
-    $adn = "DELETE FROM rpos_products WHERE prod_id = ?";
-    $stmt = $mysqli->prepare($adn);
-
+    $id = $_GET['delete'];
+    $stmt = $mysqli->prepare("DELETE FROM rpos_products WHERE prod_id = ?");
     if ($stmt) {
-        $stmt->bind_param('i', $id);
+        $stmt->bind_param('s', $id);
         if ($stmt->execute()) {
-            $success = "Deleted";
-            header("refresh:1; url=menu.php");
+            echo "<script>alert('Product deleted successfully!'); window.location.href='menu.php';</script>";
+            exit(); // Ensure the script stops
         } else {
-            $err = "Try Again Later";
+            echo "<script>alert('Delete failed: " . $stmt->error . "');</script>";
         }
         $stmt->close();
     } else {
-        $err = "Prepare statement failed: " . $mysqli->error;
+        echo "<script>alert('Prepare failed: " . $mysqli->error . "');</script>";
     }
 }
 
+
 // Handle status toggle request
 if (isset($_GET['toggle_status'])) {
-    $id = intval($_GET['toggle_status']);
+    $id = $_GET['toggle_status'];
     $current_status = $_GET['current_status'] === 'enabled' ? 'disabled' : 'enabled';
 
     $stmt = $mysqli->prepare("UPDATE rpos_products SET status = ? WHERE prod_id = ?");
     if ($stmt) {
-        $stmt->bind_param('si', $current_status, $id);
+        $stmt->bind_param('ss', $current_status, $id);
         if ($stmt->execute()) {
             $success = "Product status updated";
             header("refresh:1; url=menu.php");
@@ -140,7 +139,11 @@ require_once('includes/header.php');
                                             </td>
                                             <td>
                                                 <a href="menu.php?delete=<?php echo $prod->prod_id; ?>"
-                                                    class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Delete</a>
+                                                    class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Are you sure you want to delete this product?');">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </a>
+
                                                 <a href="update_product.php?update=<?php echo $prod->prod_id; ?>"
                                                     class="btn btn-sm btn-primary"><i class="fas fa-edit"></i> Update</a>
 

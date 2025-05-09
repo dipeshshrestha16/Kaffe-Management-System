@@ -44,6 +44,11 @@ if (isset($_POST['add_to_order'])) {
         $stmt->execute();
     }
 
+    // Decrease inventory stock
+    $updateStock = $mysqli->prepare("UPDATE rpos_inventory SET stock_qty = stock_qty - ? WHERE prod_id = ? AND stock_qty >= ?");
+    $updateStock->bind_param('iii', $prod_qty, $prod_id, $prod_qty);
+    $updateStock->execute();
+
     $checkTableStatus = $mysqli->prepare("SELECT status FROM rpos_tables WHERE table_id = ?");
     $checkTableStatus->bind_param('i', $table_id);
     $checkTableStatus->execute();

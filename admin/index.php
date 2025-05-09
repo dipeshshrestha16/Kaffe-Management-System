@@ -44,6 +44,17 @@ $stmt->execute();
 $stmt->bind_result($totalSales);
 $stmt->fetch();
 $stmt->close();
+
+// Low Stock Items Query
+$lowStockItems = [];
+$lowStockQuery = "SELECT p.prod_name, i.stock_qty, i.min_qty FROM rpos_inventory i JOIN rpos_products p ON i.prod_id = p.prod_id WHERE i.stock_qty <= i.min_qty ORDER BY p.prod_name ASC";
+$stmt = $mysqli->prepare($lowStockQuery);
+$stmt->execute();
+$stmt->bind_result($prod_name, $stock_qty, $min_qty);
+while ($stmt->fetch()) {
+    $lowStockItems[] = ['prod_name' => $prod_name, 'stock_qty' => $stock_qty, 'min_qty' => $min_qty];
+}
+$stmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -61,7 +72,8 @@ $stmt->close();
                 <div class="row">
                     <!-- Total Orders Today -->
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-stats">
+                        <div class="card card-stats shadow-lg hover-shadow-lg"
+                            style="background: linear-gradient(135deg, rgba(75, 192, 192, 0.7), rgba(75, 192, 192, 1)); border-radius: 15px; transition: transform 0.3s;">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col">
@@ -69,8 +81,8 @@ $stmt->close();
                                         <span class="h2 font-weight-bold mb-0"><?php echo $totalOrders; ?></span>
                                     </div>
                                     <div class="col-auto">
-                                        <div class="icon icon-shape bg-success text-white rounded-circle shadow">
-                                            <i class="ni ni-cart"></i>
+                                        <div class="icon icon-shape bg-white text-primary rounded-circle shadow-lg">
+                                            <i class="ni ni-cart" style="font-size: 2rem;"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -80,7 +92,8 @@ $stmt->close();
 
                     <!-- Available Tables -->
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-stats">
+                        <div class="card card-stats shadow-lg hover-shadow-lg"
+                            style="background: linear-gradient(135deg, rgba(0, 123, 255, 0.7), rgba(0, 123, 255, 1)); border-radius: 15px; transition: transform 0.3s;">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col">
@@ -88,8 +101,8 @@ $stmt->close();
                                         <span class="h2 font-weight-bold mb-0"><?php echo $availableTables; ?></span>
                                     </div>
                                     <div class="col-auto">
-                                        <div class="icon icon-shape bg-info text-white rounded-circle shadow">
-                                            <i class="ni ni-chart-bar-32"></i>
+                                        <div class="icon icon-shape bg-white text-info rounded-circle shadow-lg">
+                                            <i class="ni ni-chart-bar-32" style="font-size: 2rem;"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -99,7 +112,8 @@ $stmt->close();
 
                     <!-- Bills Pending -->
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-stats">
+                        <div class="card card-stats shadow-lg hover-shadow-lg"
+                            style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.7), rgba(255, 193, 7, 1)); border-radius: 15px; transition: transform 0.3s;">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col">
@@ -107,8 +121,8 @@ $stmt->close();
                                         <span class="h2 font-weight-bold mb-0"><?php echo $billsPending; ?></span>
                                     </div>
                                     <div class="col-auto">
-                                        <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
-                                            <i class="ni ni-collection"></i>
+                                        <div class="icon icon-shape bg-white text-warning rounded-circle shadow-lg">
+                                            <i class="ni ni-collection" style="font-size: 2rem;"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -118,7 +132,8 @@ $stmt->close();
 
                     <!-- Total Sales -->
                     <div class="col-xl-3 col-md-6">
-                        <div class="card card-stats">
+                        <div class="card card-stats shadow-lg hover-shadow-lg"
+                            style="background: linear-gradient(135deg, rgba(131, 226, 53, 0.7), rgba(131, 226, 53, 0.7)); border-radius: 15px; transition: transform 0.3s;">
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col">
@@ -127,16 +142,18 @@ $stmt->close();
                                             class="h2 font-weight-bold mb-0">Rs.<?php echo $totalSales ? number_format($totalSales, 2) : '0.00'; ?></span>
                                     </div>
                                     <div class="col-auto">
-                                        <div class="icon icon-shape bg-danger text-white rounded-circle shadow">
-                                            <i class="ni ni-money-coins"></i>
+                                        <div class="icon icon-shape bg-white text-danger rounded-circle shadow-lg">
+                                            <i class="ni ni-money-coins" style="font-size: 2rem;"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Recent Orders -->
                     <div class="col-xl-6 col-md-12 mt-1">
-                        <div class="card card-stats">
+                        <div class="card card-stats shadow-lg hover-shadow-lg" style="border-radius: 15px;">
                             <div class="card-body">
                                 <h5 class="card-title text-uppercase text-muted mb-0">Recent Orders</h5>
                                 <table class="table table-bordered">
@@ -165,51 +182,45 @@ $stmt->close();
                         </div>
                     </div>
 
-                </div>
+                    <!-- Low Stock Items -->
+                    <div class="col-xl-6 col-md-12 mt-1">
+                        <div class="card card-stats shadow-lg hover-shadow-lg"
+                            style="background: linear-gradient(135deg, rgb(133, 26, 36), rgb(133, 26, 36)); border-radius: 15px;">
+                            <div class="card-body">
+                                <h5 class="card-title text-uppercase text-white mb-3">Low Stock Items</h5>
 
-                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                <canvas id="salesTrendChart" width="200" height="50"></canvas>
-
-                <script>
-                    var ctx = document.getElementById('salesTrendChart').getContext('2d');
-                    var salesTrendChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-                            datasets: [{
-                                label: 'Sales in Rs.',
-                                data: [1200, 1800, 1500, 1700, 2200, 2100, 2500],  // Replace with dynamic data
-                                borderColor: 'rgb(75, 192, 192)',
-                                tension: 0.1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: {
-                                    position: 'top',
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function (tooltipItem) {
-                                            return 'Rs. ' + tooltipItem.raw;
+                                <table class="table table-bordered" style="background-color: white;">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Stock</th>
+                                            <th>Min Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        // Display low stock items
+                                        if (empty($lowStockItems)) {
+                                            echo "<tr><td colspan='3'>No low stock items.</td></tr>";
+                                        } else {
+                                            foreach ($lowStockItems as $item) {
+                                                echo "<tr>
+                                    <td>{$item['prod_name']}</td>
+                                    <td>{$item['stock_qty']}</td>
+                                    <td>{$item['min_qty']}</td>
+                                  </tr>";
+                                            }
                                         }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                </script>
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
 
-            </div>
-        </div>
-
-        <?php include('includes/footer.php'); ?>
-    </div>
-
-    <?php include('includes/scripts.php'); ?>
-
+                    <?php include('includes/footer.php'); ?>
+                    <?php include('includes/scripts.php'); ?>
 </body>
 
 </html>
