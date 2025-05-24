@@ -19,7 +19,6 @@ if (isset($_POST['add_to_order'])) {
     $prod_price = floatval($_POST['prod_price']);
     $prod_qty = max(1, intval($_POST['prod_qty']));
 
-    // Check stock before proceeding
     $stockCheck = $mysqli->prepare("SELECT stock_qty FROM rpos_inventory WHERE prod_id = ?");
     $stockCheck->bind_param('i', $prod_id);
     $stockCheck->execute();
@@ -39,7 +38,6 @@ if (isset($_POST['add_to_order'])) {
         $customer_name = $_SESSION['customer_name_' . $table_id];
     }
 
-    // Check if order already exists
     $check = $mysqli->prepare("SELECT * FROM rpos_tableorders WHERE table_id = ? AND prod_id = ? AND order_status != 'paid' AND group_id = ?");
     $check->bind_param('iii', $table_id, $prod_id, $group_id);
     $check->execute();
@@ -57,12 +55,10 @@ if (isset($_POST['add_to_order'])) {
         $stmt->execute();
     }
 
-    // Decrease stock if sufficient
     $updateStock = $mysqli->prepare("UPDATE rpos_inventory SET stock_qty = stock_qty - ? WHERE prod_id = ? AND stock_qty >= ?");
     $updateStock->bind_param('iii', $prod_qty, $prod_id, $prod_qty);
     $updateStock->execute();
 
-    // Set table status to occupied if available/reserved
     $checkTableStatus = $mysqli->prepare("SELECT status FROM rpos_tables WHERE table_id = ?");
     $checkTableStatus->bind_param('i', $table_id);
     $checkTableStatus->execute();
@@ -90,6 +86,7 @@ if (isset($_POST['pay_all_orders'])) {
     unset($_SESSION['customer_name_' . $table_id]);
     unset($_SESSION['group_id_' . $table_id]);
 
+    $_SESSION['payment_success'] = true;
     header("Location: table_order.php?table_id=" . $table_id);
     exit();
 }
@@ -211,8 +208,9 @@ require_once('includes/header.php');
                         Orders</a>
                 </div> -->
                 <div class="col-md-6 text-right">
-                    <form method="POST" class="d-inline">
-                        <button type="submit" name="pay_all_orders" class="btn btn-success">Pay Orders</button>
+                    <form id="payForm" method="POST" class="d-inline">
+                        <button type="button" id="payBtn" class="btn btn-success">Pay Orders</button>
+                        <input type="hidden" name="pay_all_orders" value="1">
                     </form>
                     <a target="_blank"
                         href="print_receipt.php?table_id=<?php echo $table_id; ?>&group_id=<?php echo $group_id; ?>"
@@ -224,7 +222,12 @@ require_once('includes/header.php');
             <?php require_once('includes/footer.php'); ?>
         </div>
     </div>
+
     <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         function fillProductDetails(prod_id) {
             const select = document.querySelector("select[name='prod_id']");
@@ -232,7 +235,36 @@ require_once('includes/header.php');
             document.getElementById('prod_name').value = selectedOption.getAttribute('data-name');
             document.getElementById('prod_price').value = selectedOption.getAttribute('data-price');
         }
+
+        document.getElementById('payBtn').addEventListener('click', function () {
+            Swal.fire({
+                title: 'Confirm Payment',
+                text: "Are you sure you want to complete this order?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Pay Now'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('payForm').submit();
+                }
+            });
+        });
     </script>
+
+    <?php if (isset($_SESSION['payment_success'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Payment Successful',
+                text: 'The order has been paid successfully!',
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'OK'
+            });
+        </script>
+        <?php unset($_SESSION['payment_success']); ?>
+    <?php endif; ?>
 </body>
 
 </html>
