@@ -120,7 +120,7 @@ require_once('includes/header.php');
                                             echo "<tr>
                                                 <td>{$item->prod_name}</td>
                                                 <td>{$item->prod_qty}</td>
-                                                <td>\${$item->prod_price}</td>
+                                                <td>Rs.{$item->prod_price}</td>
                                                 <td>
                                                     <form method='POST' action='update_tableorders.php?table_id={$table_id}' class='update-form'>
                                                         <input type='hidden' name='order_id' value='{$item->order_id}'>
@@ -159,8 +159,23 @@ require_once('includes/header.php');
 
     <?php require_once('includes/scripts.php'); ?>
 
+
+
+
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <?php if (isset($_SESSION['cancel_success'])): ?>
+        <script>
+            Swal.fire({
+                title: 'Cancelled!',
+                text: 'The order has been successfully cancelled.',
+                icon: 'success',
+                confirmButtonColor: '#3085d6'
+            });
+        </script>
+        <?php unset($_SESSION['cancel_success']); ?>
+    <?php endif; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.cancel-btn').forEach(button => {

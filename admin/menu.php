@@ -11,17 +11,17 @@ if (isset($_GET['delete'])) {
     if ($stmt) {
         $stmt->bind_param('s', $id);
         if ($stmt->execute()) {
-            echo "<script>alert('Product deleted successfully!'); window.location.href='menu.php';</script>";
-            exit(); // Ensure the script stops
+            $_SESSION['success'] = 'Product deleted successfully!';
         } else {
-            echo "<script>alert('Delete failed: " . $stmt->error . "');</script>";
+            $_SESSION['error'] = 'Delete failed: ' . $stmt->error;
         }
         $stmt->close();
     } else {
-        echo "<script>alert('Prepare failed: " . $mysqli->error . "');</script>";
+        $_SESSION['error'] = 'Prepare failed: ' . $mysqli->error;
     }
+    header("Location: menu.php");
+    exit();
 }
-
 
 // Handle status toggle request
 if (isset($_GET['toggle_status'])) {
@@ -32,15 +32,16 @@ if (isset($_GET['toggle_status'])) {
     if ($stmt) {
         $stmt->bind_param('ss', $current_status, $id);
         if ($stmt->execute()) {
-            $success = "Product status updated";
-            header("refresh:1; url=menu.php");
+            $_SESSION['success'] = "Product status updated.";
         } else {
-            $err = "Failed to update status";
+            $_SESSION['error'] = "Failed to update status.";
         }
         $stmt->close();
     } else {
-        $err = "Prepare statement failed: " . $mysqli->error;
+        $_SESSION['error'] = "Prepare statement failed: " . $mysqli->error;
     }
+    header("Location: menu.php");
+    exit();
 }
 
 $selected_category = isset($_GET['category']) ? $_GET['category'] : '';
@@ -57,8 +58,7 @@ require_once('includes/header.php');
             class="header pb-8 pt-5 pt-md-8">
             <span class="mask bg-gradient-dark opacity-8"></span>
             <div class="container-fluid">
-                <div class="header-body">
-                </div>
+                <div class="header-body"></div>
             </div>
         </div>
         <div class="container-fluid mt--8">
@@ -138,15 +138,14 @@ require_once('includes/header.php');
                                                 </a><span class='badge badge-success'>Enabled</span>
                                             </td>
                                             <td>
-                                                <a href="menu.php?delete=<?php echo $prod->prod_id; ?>"
-                                                    class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('Are you sure you want to delete this product?');">
+                                                <button class="btn btn-sm btn-danger delete-btn"
+                                                    data-id="<?php echo $prod->prod_id; ?>">
                                                     <i class="fas fa-trash"></i> Delete
-                                                </a>
-
+                                                </button>
                                                 <a href="update_product.php?update=<?php echo $prod->prod_id; ?>"
-                                                    class="btn btn-sm btn-primary"><i class="fas fa-edit"></i> Update</a>
-
+                                                    class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-edit"></i> Update
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php } ?>
@@ -160,6 +159,54 @@ require_once('includes/header.php');
         </div>
     </div>
     <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- SweetAlert2 Flash Messages -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '<?php echo $_SESSION['success']; ?>',
+                confirmButtonColor: '#3085d6'
+            });
+        </script>
+        <?php unset($_SESSION['success']); endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: '<?php echo $_SESSION['error']; ?>',
+                confirmButtonColor: '#d33'
+            });
+        </script>
+        <?php unset($_SESSION['error']); endif; ?>
+
+    <!-- Delete Confirmation -->
+    <script>
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const productId = this.getAttribute('data-id');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "This product will be permanently deleted.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'menu.php?delete=' + productId;
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>
