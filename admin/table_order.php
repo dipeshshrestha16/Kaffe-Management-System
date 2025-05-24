@@ -6,19 +6,30 @@ check_login();
 
 $table_id = isset($_GET['table_id']) ? intval($_GET['table_id']) : 0;
 
-// Assign or retrieve current group_id (order session)
 if (!isset($_SESSION['group_id_' . $table_id])) {
-    $_SESSION['group_id_' . $table_id] = time(); // Unique timestamp
+    $_SESSION['group_id_' . $table_id] = time(); // Unique session timestamp
 }
 $group_id = $_SESSION['group_id_' . $table_id];
 
 // Handle add to order
 if (isset($_POST['add_to_order'])) {
-    $table_id = $_POST['table_id'];
-    $prod_id = $_POST['prod_id'];
+    $table_id = intval($_POST['table_id']);
+    $prod_id = intval($_POST['prod_id']);
     $prod_name = $_POST['prod_name'];
-    $prod_price = $_POST['prod_price'];
-    $prod_qty = max(1, intval($_POST['prod_qty'])); // Prevent less than 1
+    $prod_price = floatval($_POST['prod_price']);
+    $prod_qty = max(1, intval($_POST['prod_qty']));
+
+    $stockCheck = $mysqli->prepare("SELECT stock_qty FROM rpos_inventory WHERE prod_id = ?");
+    $stockCheck->bind_param('i', $prod_id);
+    $stockCheck->execute();
+    $stockRes = $stockCheck->get_result();
+    if ($stockRes->num_rows > 0) {
+        $stockRow = $stockRes->fetch_object();
+        if ($stockRow->stock_qty < $prod_qty) {
+            echo "<script>alert('Cannot add product. Only {$stockRow->stock_qty} units left in stock or item is out of stock.'); window.history.back();</script>";
+            exit();
+        }
+    }
 
     if (!isset($_SESSION['customer_name_' . $table_id])) {
         $customer_name = $_POST['customer_name'];
@@ -44,7 +55,6 @@ if (isset($_POST['add_to_order'])) {
         $stmt->execute();
     }
 
-    // Decrease inventory stock
     $updateStock = $mysqli->prepare("UPDATE rpos_inventory SET stock_qty = stock_qty - ? WHERE prod_id = ? AND stock_qty >= ?");
     $updateStock->bind_param('iii', $prod_qty, $prod_id, $prod_qty);
     $updateStock->execute();
@@ -65,8 +75,7 @@ if (isset($_POST['add_to_order'])) {
 
 // Handle pay all orders
 if (isset($_POST['pay_all_orders'])) {
-    $payQuery = "UPDATE rpos_tableorders SET order_status = 'paid' WHERE table_id = ? AND group_id = ?";
-    $payStmt = $mysqli->prepare($payQuery);
+    $payStmt = $mysqli->prepare("UPDATE rpos_tableorders SET order_status = 'paid' WHERE table_id = ? AND group_id = ?");
     $payStmt->bind_param('ii', $table_id, $group_id);
     $payStmt->execute();
 
@@ -77,13 +86,13 @@ if (isset($_POST['pay_all_orders'])) {
     unset($_SESSION['customer_name_' . $table_id]);
     unset($_SESSION['group_id_' . $table_id]);
 
+    $_SESSION['payment_success'] = true;
     header("Location: table_order.php?table_id=" . $table_id);
     exit();
 }
 
 require_once('includes/header.php');
 ?>
-
 
 <body>
     <?php require_once('includes/sidebar.php'); ?>
@@ -109,7 +118,6 @@ require_once('includes/header.php');
                             <form method="POST">
                                 <input type="hidden" name="table_id" value="<?php echo $table_id; ?>">
 
-                                <!-- Only show the customer name field if not set in session -->
                                 <?php if (!isset($_SESSION['customer_name_' . $table_id])): ?>
                                     <div class="form-group">
                                         <label>Customer Name</label>
@@ -118,17 +126,22 @@ require_once('includes/header.php');
                                 <?php endif; ?>
 
                                 <div class="form-group">
-                                    <label>Select Product</label>
-                                    <select class="form-control" name="prod_id"
-                                        onchange="fillProductDetails(this.value)">
+                                    <label for="prod_id">Select Product</label>
+                                    <select class="form-control" name="prod_id" onchange="fillProductDetails(this)">
                                         <option value="">Select</option>
                                         <?php
-                                        $ret = "SELECT * FROM rpos_products";
+                                        $ret = "SELECT p.prod_id, p.prod_name, p.prod_price, i.stock_qty 
+                                                FROM rpos_products p 
+                                                LEFT JOIN rpos_inventory i ON p.prod_id = i.prod_id";
                                         $stmt = $mysqli->prepare($ret);
                                         $stmt->execute();
                                         $res = $stmt->get_result();
                                         while ($prod = $res->fetch_object()) {
-                                            echo "<option value='$prod->prod_id' data-name='$prod->prod_name' data-price='$prod->prod_price'>$prod->prod_name - Rs. $prod->prod_price</option>";
+                                            $is_out_of_stock = isset($prod->stock_qty) && $prod->stock_qty <= 0;
+                                            $disabled = $is_out_of_stock ? "disabled" : "";
+                                            $label = $is_out_of_stock ? "(Out of Stock)" : "- Rs. $prod->prod_price";
+
+                                            echo "<option value='$prod->prod_id' data-name='$prod->prod_name' data-price='$prod->prod_price' $disabled>$prod->prod_name $label</option>";
                                         }
                                         ?>
                                     </select>
@@ -146,6 +159,7 @@ require_once('includes/header.php');
                     </div>
                 </div>
 
+                <!-- Current Orders -->
                 <div class="col-md-6">
                     <div class="card shadow">
                         <div class="card-header border-0">Current Orders</div>
@@ -172,11 +186,11 @@ require_once('includes/header.php');
                                         $subtotal = $item->prod_price * $item->prod_qty;
                                         $total += $subtotal;
                                         echo "<tr>
-                            <td>{$item->prod_name}</td>
-                            <td>{$item->prod_qty}</td>
-                            <td>Rs.{$item->prod_price}</td>
-                            <td><strong>Rs.{$subtotal}</strong></td>
-                          </tr>";
+                                        <td>{$item->prod_name}</td>
+                                        <td>{$item->prod_qty}</td>
+                                        <td>Rs.{$item->prod_price}</td>
+                                        <td><strong>Rs.{$subtotal}</strong></td>
+                                      </tr>";
                                     }
                                     echo "<tr><td colspan='3'><strong>Total</strong></td><td><strong>Rs.{$total}</strong></td></tr>";
                                     ?>
@@ -187,41 +201,70 @@ require_once('includes/header.php');
                 </div>
             </div>
 
-            <!-- Buttons -->
+            <!-- Footer Buttons -->
             <div class="row">
-                <div class="col-md-6" style="text-align: left;">
+                <div class="col-md-6 text-left">
                     <a href="update_tableorders.php?table_id=<?php echo $table_id; ?>" class="btn btn-info">Update
                         Orders</a>
                 </div>
-                <div class="col-md-6" style="text-align: right;">
-                    <form method="POST">
-                        <button type="submit" name="pay_all_orders" class="btn btn-success">Pay Orders</button>
+                <div class="col-md-6 text-right">
+                    <form id="payForm" method="POST" class="d-inline">
+                        <button type="button" id="payBtn" class="btn btn-success">Pay Orders</button>
+                        <input type="hidden" name="pay_all_orders" value="1">
                     </form>
                     <a target="_blank"
-                        href="print_receipt.php?table_id=<?php echo $table_id; ?>&group_id=<?php echo $_SESSION['group_id_' . $table_id]; ?>">
-                        <button class="btn btn-sm btn-primary">
-                            <i class="fas fa-print"></i>
-                            Print Receipt
-                        </button>
+                        href="print_receipt.php?table_id=<?php echo $table_id; ?>&group_id=<?php echo $group_id; ?>"
+                        class="btn btn-sm btn-primary">
+                        <i class="fas fa-print"></i> Print Receipt
                     </a>
-
                 </div>
             </div>
-
             <?php require_once('includes/footer.php'); ?>
         </div>
     </div>
+
     <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         function fillProductDetails(prod_id) {
             const select = document.querySelector("select[name='prod_id']");
             const selectedOption = select.options[select.selectedIndex];
-            const name = selectedOption.getAttribute('data-name');
-            const price = selectedOption.getAttribute('data-price');
-            document.getElementById('prod_name').value = name;
-            document.getElementById('prod_price').value = price;
+            document.getElementById('prod_name').value = selectedOption.getAttribute('data-name');
+            document.getElementById('prod_price').value = selectedOption.getAttribute('data-price');
         }
+
+        document.getElementById('payBtn').addEventListener('click', function () {
+            Swal.fire({
+                title: 'Confirm Payment',
+                text: "Are you sure you want to complete this order?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Pay Now'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('payForm').submit();
+                }
+            });
+        });
     </script>
+
+    <?php if (isset($_SESSION['payment_success'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Payment Successful',
+                text: 'The order has been paid successfully!',
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'OK'
+            });
+        </script>
+        <?php unset($_SESSION['payment_success']); ?>
+    <?php endif; ?>
 </body>
 
 </html>

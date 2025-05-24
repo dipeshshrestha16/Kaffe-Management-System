@@ -11,7 +11,6 @@ $success = $err = '';
 
 // Fetch open balance record
 $stmt = $mysqli->prepare("SELECT id, opening_balance FROM rpos_balances WHERE balance_date = ? AND status = 'open' LIMIT 1");
-
 if (!$stmt) {
     die("Prepare failed: " . $mysqli->error);
 }
@@ -79,11 +78,6 @@ if (isset($_POST['close_shift'])) {
                 <div class="col-lg-8 col-md-10">
                     <div class="card bg-secondary shadow border-0">
                         <div class="card-body px-lg-5 py-lg-5">
-                            <?php if ($err)
-                                echo "<div class='alert alert-danger'>$err</div>"; ?>
-                            <?php if ($success)
-                                echo "<div class='alert alert-success'>$success</div>"; ?>
-
                             <?php if (!$success): ?>
                                 <form method="post">
                                     <p><strong>Opening Balance:</strong> Rs.
@@ -120,5 +114,48 @@ if (isset($_POST['close_shift'])) {
     </div>
 
     <?php include('includes/footer.php'); ?>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (!empty($success)): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: '<?php echo addslashes($success); ?>',
+                confirmButtonColor: '#3085d6'
+            }).then(() => {
+                Swal.fire({
+                    title: 'Do you want to log out?',
+                    text: "You have closed your shift successfully.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, log me out',
+                    cancelButtonText: 'No, go to dashboard',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#6c757d'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '../index.php'; // Adjust logout URL if different
+                    } else {
+                        window.location.href = 'index.php'; // Dashboard URL
+                    }
+                });
+            });
+        </script>
+    <?php elseif (!empty($err)): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: '<?php echo addslashes($err); ?>',
+                confirmButtonColor: '#d33'
+            });
+        </script>
+    <?php endif; ?>
+
     <?php include('includes/scripts.php'); ?>
 </body>
+
+</html>

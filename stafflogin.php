@@ -86,14 +86,14 @@ require_once('includes/header.php');
                                     </div>
                                 </div>
                                 <div class="custom-control custom-control-alternative custom-checkbox">
-                                    <input class="custom-control-input" id=" customCheckLogin" type="checkbox">
-                                    <label class="custom-control-label" for=" customCheckLogin">
+                                    <input class="custom-control-input" id="customCheckLogin" type="checkbox">
+                                    <label class="custom-control-label" for="customCheckLogin">
                                         <span class="text-muted">Remember me</span>
                                     </label>
                                 </div>
                                 <div class="text-center">
                                     <button type="submit" name="login" class="btn btn my-2 login-btn"
-                                        style="background-color:rgb(158, 148, 175);;">Log In</button>
+                                        style="background-color:rgb(158, 148, 175);">Log In</button>
                                 </div>
                             </form>
 
@@ -109,13 +109,23 @@ require_once('includes/header.php');
         </div>
     </div>
 
-    <?php
-    require_once('includes/footer.php');
-    ?>
+    <?php require_once('includes/footer.php'); ?>
     <!-- Argon Scripts -->
-    <?php
-    require_once('includes/scripts.php');
-    ?>
+    <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (isset($login_error)): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Login Failed',
+                text: '<?php echo $login_error; ?>',
+                confirmButtonColor: '#dc3545'
+            });
+        </script>
+    <?php endif; ?>
 </body>
 
 </html>

@@ -92,8 +92,8 @@ require_once('includes/header.php');
                                     </div>
                                 </div>
                                 <div class="custom-control custom-control-alternative custom-checkbox">
-                                    <input class="custom-control-input" id=" customCheckLogin" type="checkbox">
-                                    <label class="custom-control-label" for=" customCheckLogin">
+                                    <input class="custom-control-input" id="customCheckLogin" type="checkbox">
+                                    <label class="custom-control-label" for="customCheckLogin">
                                         <span class="text-muted">Remember Me</span>
                                     </label>
                                 </div>
@@ -101,9 +101,7 @@ require_once('includes/header.php');
                                     <button type="submit" name="login" class="btn btn my-2 login-btn"
                                         style="background-color:rgb(158, 148, 175);;">Log In</button>
                                 </div>
-
                             </form>
-
                         </div>
                     </div>
                 </div>
@@ -111,12 +109,22 @@ require_once('includes/header.php');
         </div>
     </div>
 
-    <?php
-    require_once('includes/footer.php');
-    ?>
-    <?php
-    require_once('includes/scripts.php');
-    ?>
+    <?php require_once('includes/footer.php'); ?>
+    <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (isset($err)): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Login Failed',
+                text: '<?php echo $err; ?>',
+                confirmButtonColor: '#dc3545'
+            });
+        </script>
+    <?php endif; ?>
 </body>
 
 </html>

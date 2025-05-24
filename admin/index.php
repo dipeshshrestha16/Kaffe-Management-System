@@ -55,6 +55,49 @@ while ($stmt->fetch()) {
     $lowStockItems[] = ['prod_name' => $prod_name, 'stock_qty' => $stock_qty, 'min_qty' => $min_qty];
 }
 $stmt->close();
+
+// Pagination for Recent Orders
+$page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? intval($_GET['page']) : 1;
+$ordersPerPage = 3;
+$offset = ($page - 1) * $ordersPerPage;
+
+// Get total count of distinct recent orders
+$countQuery = "
+    SELECT COUNT(*) FROM (
+        SELECT table_id, prod_name
+        FROM rpos_tableorders
+        WHERE DATE(order_time) = ?
+        GROUP BY table_id, prod_name
+    ) AS grouped_orders
+";
+$stmt = $mysqli->prepare($countQuery);
+$stmt->bind_param('s', $today);
+$stmt->execute();
+$stmt->bind_result($totalOrdersCount);
+$stmt->fetch();
+$stmt->close();
+
+// Fetch paginated recent orders
+$recentOrdersQuery = "
+    SELECT table_id, prod_name, SUM(prod_qty) AS quantity
+    FROM rpos_tableorders
+    WHERE DATE(order_time) = ?
+    GROUP BY table_id, prod_name
+    ORDER BY MAX(order_time) DESC
+    LIMIT ? OFFSET ?
+";
+$stmt = $mysqli->prepare($recentOrdersQuery);
+$stmt->bind_param('sii', $today, $ordersPerPage, $offset);
+$stmt->execute();
+$stmt->bind_result($table_id, $prod_name, $quantity);
+
+$recentOrders = [];
+while ($stmt->fetch()) {
+    $recentOrders[] = ['table_id' => $table_id, 'prod_name' => $prod_name, 'quantity' => $quantity];
+}
+$stmt->close();
+
+$totalPages = ceil($totalOrdersCount / $ordersPerPage);
 ?>
 
 <!DOCTYPE html>
@@ -161,34 +204,55 @@ $stmt->close();
                                         <tr>
                                             <th>Table</th>
                                             <th>Order</th>
-                                            <th>Total</th>
+                                            <th>Quantity</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        $recentOrdersQuery = "SELECT table_id, order_id, SUM(prod_price * prod_qty) AS total FROM rpos_tableorders WHERE DATE(order_time) = ? GROUP BY table_id ORDER BY order_time DESC LIMIT 5";
-                                        $stmt = $mysqli->prepare($recentOrdersQuery);
-                                        $stmt->bind_param('s', $today);
-                                        $stmt->execute();
-                                        $stmt->bind_result($table_id, $order_id, $total);
-                                        while ($stmt->fetch()) {
-                                            echo "<tr><td>$table_id</td><td>$order_id</td><td>Rs. " . number_format($total, 2) . "</td></tr>";
+                                        if (empty($recentOrders)) {
+                                            echo "<tr><td colspan='3'>No recent orders today.</td></tr>";
+                                        } else {
+                                            foreach ($recentOrders as $order) {
+                                                echo "<tr>
+                                                    <td>{$order['table_id']}</td>
+                                                    <td>{$order['prod_name']}</td>
+                                                    <td>{$order['quantity']}</td>
+                                                </tr>";
+                                            }
                                         }
-                                        $stmt->close();
                                         ?>
                                     </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" class="text-center">
+                                                <!-- Pagination buttons -->
+                                                <form method="get" style="display:inline;">
+                                                    <input type="hidden" name="page" value="<?= max(1, $page - 1) ?>">
+                                                    <button type="submit" class="btn btn-sm btn-primary" <?= $page <= 1 ? 'disabled' : '' ?>>&laquo; Previous</button>
+                                                </form>
+
+                                                <span style="margin: 0 10px;">Page <?= $page ?> of
+                                                    <?= $totalPages ?></span>
+
+                                                <form method="get" style="display:inline;">
+                                                    <input type="hidden" name="page"
+                                                        value="<?= min($totalPages, $page + 1) ?>">
+                                                    <button type="submit" class="btn btn-sm btn-primary" <?= $page >= $totalPages ? 'disabled' : '' ?>>Next &raquo;</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Low Stock Items -->
+                    <!-- Low Stock Alerts -->
                     <div class="col-xl-6 col-md-12 mt-1">
                         <div class="card card-stats shadow-lg hover-shadow-lg"
                             style="background: linear-gradient(135deg, rgb(133, 26, 36), rgb(133, 26, 36)); border-radius: 15px;">
                             <div class="card-body">
                                 <h5 class="card-title text-uppercase text-white mb-3">Low Stock Items</h5>
-
                                 <table class="table table-bordered" style="background-color: white;">
                                     <thead>
                                         <tr>
@@ -199,16 +263,15 @@ $stmt->close();
                                     </thead>
                                     <tbody>
                                         <?php
-                                        // Display low stock items
                                         if (empty($lowStockItems)) {
                                             echo "<tr><td colspan='3'>No low stock items.</td></tr>";
                                         } else {
                                             foreach ($lowStockItems as $item) {
                                                 echo "<tr>
-                                    <td>{$item['prod_name']}</td>
-                                    <td>{$item['stock_qty']}</td>
-                                    <td>{$item['min_qty']}</td>
-                                  </tr>";
+                        <td>{$item['prod_name']}</td>
+                        <td>{$item['stock_qty']}</td>
+                        <td>{$item['min_qty']}</td>
+                      </tr>";
                                             }
                                         }
                                         ?>
@@ -217,10 +280,18 @@ $stmt->close();
                             </div>
                         </div>
                     </div>
+                </div>
 
+            </div>
+        </div>
+    </div>
 
-                    <?php include('includes/footer.php'); ?>
-                    <?php include('includes/scripts.php'); ?>
+    <?php include('includes/footer.php'); ?>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/vendor/jquery/dist/jquery.min.js"></script>
+    <script src="assets/vendor/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

@@ -73,12 +73,12 @@
                 <div class="collapse" id="collapsePagesUsers" aria-labelledby="headingTwo"
                     data-bs-parent="#sidenavAccordion">
                     <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPagesUsers">
-                        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
+                        <!-- <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
                             data-bs-target="#pagesCollapseAuthAdmins" aria-expanded="false"
                             aria-controls="pagesCollapseAuthAdmins">
                             Admins
                             <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                        </a>
+                        </a> -->
                         <div class="collapse" id="pagesCollapseAuthAdmins" aria-labelledby="headingOne"
                             data-bs-parent="#sidenavAccordionPagesUsers">
                             <nav class="sb-sidenav-menu-nested nav">

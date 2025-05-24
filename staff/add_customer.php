@@ -3,68 +3,62 @@ session_start();
 include('config/config.php');
 include('config/checklogin.php');
 include('config/code-generator.php');
-//Visit codeastro.com for more projects
 check_login();
-//Add Customer
+
+// Add Customer
 if (isset($_POST['addCustomer'])) {
-    //Prevent Posting Blank Values
-    if (empty($_POST["customer_phoneno"]) || empty($_POST["customer_name"]) || empty($_POST['customer_email']) || empty($_POST['customer_password'])) {
+    if (
+        empty($_POST["customer_phoneno"]) ||
+        empty($_POST["customer_name"]) ||
+        empty($_POST['customer_email']) ||
+        empty($_POST['customer_password'])
+    ) {
         $err = "Blank Values Not Accepted";
     } else {
         $customer_name = $_POST['customer_name'];
         $customer_phoneno = $_POST['customer_phoneno'];
         $customer_email = $_POST['customer_email'];
-        $customer_password = sha1(md5($_POST['customer_password'])); //Hash This 
+        $customer_password = sha1(md5($_POST['customer_password'])); // Hashed
         $customer_id = $_POST['customer_id'];
 
-        //Insert Captured information to a database table
         $postQuery = "INSERT INTO rpos_customers (customer_id, customer_name, customer_phoneno, customer_email, customer_password) VALUES(?,?,?,?,?)";
         $postStmt = $mysqli->prepare($postQuery);
-        //bind paramaters
         $rc = $postStmt->bind_param('sssss', $customer_id, $customer_name, $customer_phoneno, $customer_email, $customer_password);
         $postStmt->execute();
-        //declare a varible which will be passed to alert function
+
         if ($postStmt) {
-            $success = "Customer Added" && header("refresh:1; url=customers.php");
+            $success = "Customer Added Successfully!";
         } else {
             $err = "Please Try Again Or Try Later";
         }
     }
 }
-//Visit codeastro.com for more projects
+
 require_once('includes/header.php');
 ?>
 
 <body>
-    <!-- For more projects: Visit codeastro.com  -->
-    <!-- Sidenav -->
-    <?php
-    require_once('includes/sidebar.php');
-    ?>
-    <!-- Main content -->
+    <?php require_once('includes/sidebar.php'); ?>
+
     <div class="main-content">
-        <!-- Top navbar -->
-        <?php
-        require_once('includes/navbar.php');
-        ?>
-        <!-- Header -->
+        <?php require_once('includes/navbar.php'); ?>
+
         <div style="background-image: url(assets/img/theme/restro00.jpg); background-size: cover;"
-            class="header  pb-8 pt-5 pt-md-8">
+            class="header pb-8 pt-5 pt-md-8">
             <span class="mask bg-gradient-dark opacity-8"></span>
             <div class="container-fluid">
-                <div class="header-body">
-                </div>
+                <div class="header-body"></div>
             </div>
         </div>
-        <!-- Page content -->
+
         <div class="container-fluid mt--8">
-            <!-- Table -->
             <div class="row">
                 <div class="col">
                     <div class="card shadow">
                         <div class="card-header border-0">
                             <h3>Please Fill All Fields</h3>
-                        </div><!-- For more projects: Visit codeastro.com  -->
+                        </div>
+
                         <div class="card-body">
                             <form method="POST">
                                 <div class="form-row">
@@ -90,11 +84,11 @@ require_once('includes/header.php');
                                         <input type="password" name="customer_password" class="form-control" value="">
                                     </div>
                                 </div>
-                                <br><!-- For more projects: Visit codeastro.com  -->
+                                <br>
                                 <div class="form-row">
                                     <div class="col-md-6">
                                         <input type="submit" name="addCustomer" value="Add Customer"
-                                            class="btn btn-success" value="">
+                                            class="btn btn-success">
                                     </div>
                                 </div>
                             </form>
@@ -102,16 +96,40 @@ require_once('includes/header.php');
                     </div>
                 </div>
             </div>
-            <!-- Footer --><!-- For more projects: Visit codeastro.com  -->
-            <?php
-            require_once('includes/footer.php');
-            ?>
+
+            <?php require_once('includes/footer.php'); ?>
         </div>
     </div>
-    <!-- Argon Scripts -->
-    <?php
-    require_once('includes/scripts.php');
-    ?>
+
+    <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (isset($success)): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '<?= $success ?>',
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = "customers.php";
+            });
+        </script>
+    <?php endif; ?>
+
+    <?php if (isset($err)): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: '<?= $err ?>'
+            });
+        </script>
+    <?php endif; ?>
+
 </body>
 
 </html>

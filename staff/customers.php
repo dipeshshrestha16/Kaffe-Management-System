@@ -3,40 +3,23 @@ session_start();
 include('config/config.php');
 include('config/checklogin.php');
 check_login();
-//Delete Staff
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    $adn = "DELETE FROM  rpos_customers  WHERE  customer_id = ?";
-    $stmt = $mysqli->prepare($adn);
-    $stmt->bind_param('s', $id);
-    $stmt->execute();
-    $stmt->close();
-    if ($stmt) {
-        $success = "Deleted" && header("refresh:1; url=customes.php");
-    } else {
-        $err = "Try Again Later";
-    }
-}
 require_once('includes/header.php');
 ?>
 
 <body>
     <!-- Sidenav -->
-    <?php
-    require_once('includes/sidebar.php');
-    ?>
+    <?php require_once('includes/sidebar.php'); ?>
     <!-- Main content -->
     <div class="main-content">
         <!-- Top navbar -->
-        <?php
-        require_once('includes/navbar.php');
-        ?>
+        <?php require_once('includes/navbar.php'); ?>
         <!-- Header -->
         <div style="background-image: url(assets/img/theme/restro00.jpg); background-size: cover;"
-            class="header  pb-8 pt-5 pt-md-8">
+            class="header pb-8 pt-5 pt-md-8">
             <span class="mask bg-gradient-dark opacity-8"></span>
             <div class="container-fluid">
                 <div class="header-body">
+                    <!-- Header content if any -->
                 </div>
             </div>
         </div>
@@ -64,33 +47,26 @@ require_once('includes/header.php');
                                 </thead>
                                 <tbody>
                                     <?php
-                                    $ret = "SELECT * FROM  rpos_customers  ORDER BY `rpos_customers`.`created_at` DESC ";
+                                    $ret = "SELECT * FROM rpos_customers ORDER BY created_at DESC";
                                     $stmt = $mysqli->prepare($ret);
                                     $stmt->execute();
                                     $res = $stmt->get_result();
                                     while ($cust = $res->fetch_object()) {
                                         ?>
-                                        <tr>
-                                            <td><?php echo $cust->customer_name; ?></td>
-                                            <td><?php echo $cust->customer_phoneno; ?></td>
-                                            <td><?php echo $cust->customer_email; ?></td>
+                                        <tr id="customer-row-<?php echo $cust->customer_id; ?>">
+                                            <td><?php echo htmlspecialchars($cust->customer_name); ?></td>
+                                            <td><?php echo htmlspecialchars($cust->customer_phoneno); ?></td>
+                                            <td><?php echo htmlspecialchars($cust->customer_email); ?></td>
                                             <td>
-                                                <a href="customes.php?delete=<?php echo $cust->customer_id; ?>">
-                                                    <button class="btn btn-sm btn-danger">
-                                                        <i class="fas fa-trash"></i>
-                                                        Delete
-                                                    </button>
-                                                </a>
-
-                                                <a href="update_customer.php?update=<?php echo $cust->customer_id; ?>">
-                                                    <button class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-user-edit"></i>
-                                                        Update
-                                                    </button>
-                                                </a>
+                                                <button class="btn btn-sm btn-danger delete-btn"
+                                                    data-id="<?php echo $cust->customer_id; ?>">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
                                             </td>
                                         </tr>
-                                    <?php } ?>
+                                    <?php }
+                                    $stmt->close();
+                                    ?>
                                 </tbody>
                             </table>
                         </div>
@@ -98,15 +74,68 @@ require_once('includes/header.php');
                 </div>
             </div>
             <!-- Footer -->
-            <?php
-            require_once('includes/footer.php');
-            ?>
+            <?php require_once('includes/footer.php'); ?>
         </div>
     </div>
     <!-- Argon Scripts -->
-    <?php
-    require_once('includes/scripts.php');
-    ?>
+    <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 & AJAX Delete Script -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const custId = this.getAttribute('data-id');
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "You won't be able to revert this!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch('delete_customer.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: 'customer_id=' + encodeURIComponent(custId)
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        Swal.fire(
+                                            'Deleted!',
+                                            'Customer has been deleted.',
+                                            'success'
+                                        ).then(() => {
+                                            // Option 1: Remove row without reload
+                                            const row = document.getElementById('customer-row-' + custId);
+                                            if (row) row.remove();
+
+                                            // Option 2: Reload the page (uncomment if you prefer this)
+                                            // location.reload();
+                                        });
+                                    } else {
+                                        Swal.fire(
+                                            'Error!',
+                                            data.message || 'Failed to delete customer.',
+                                            'error'
+                                        );
+                                    }
+                                })
+                                .catch(() => {
+                                    Swal.fire('Error!', 'Request failed.', 'error');
+                                });
+                        }
+                    });
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

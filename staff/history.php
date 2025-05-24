@@ -25,12 +25,13 @@ $totalRecords = $countResult['total'];
 $totalPages = ceil($totalRecords / $limit);
 
 // Main query with LIMIT & OFFSET
-$query = "SELECT table_id, customer_name, SUM(prod_price * prod_qty) AS total_price, MAX(order_time) AS last_order_date
+$query = "SELECT table_id, customer_name, group_id, SUM(prod_price * prod_qty) AS total_price, MAX(order_time) AS last_order_date
           FROM rpos_tableorders
           WHERE order_status = 'paid'
-          GROUP BY table_id, customer_name
+          GROUP BY table_id, customer_name, group_id
           ORDER BY last_order_date DESC
           LIMIT ? OFFSET ?";
+
 $stmt = $mysqli->prepare($query);
 $stmt->bind_param("ii", $limit, $offset);
 $stmt->execute();
@@ -83,7 +84,8 @@ $res = $stmt->get_result();
                                             <td><?php echo $last_order_date; ?></td>
                                             <td>
                                                 <a target="_blank"
-                                                    href="print_receipt.php?table_id=<?php echo $order->table_id; ?>&customer_name=<?php echo urlencode($order->customer_name); ?>">
+                                                    href="print_receipt.php?table_id=<?php echo $order->table_id; ?>&group_id=<?php echo $order->group_id; ?>">
+
                                                     <button class="btn btn-sm btn-primary">
                                                         <i class="fas fa-print"></i> Print Receipt
                                                     </button>

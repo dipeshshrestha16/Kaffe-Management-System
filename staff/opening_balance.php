@@ -56,9 +56,9 @@ if (isset($_POST['submit'])) {
             $success = "Opening balance saved!";
             // Redirect to respective dashboard
             if ($user_type === 'admin') {
-                header("Location: admin/index.php");
+                header("Location: ../admin/index.php");
             } else {
-                header("Location: staff/index.php");
+                header("Location:index.php");
             }
             exit;
         } else {

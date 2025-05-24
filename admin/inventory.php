@@ -15,8 +15,7 @@ require_once('includes/header.php');
             class="header pb-8 pt-5 pt-md-8">
             <span class="mask bg-gradient-dark opacity-8"></span>
             <div class="container-fluid">
-                <div class="header-body">
-                </div>
+                <div class="header-body"></div>
             </div>
         </div>
 
@@ -47,11 +46,18 @@ require_once('includes/header.php');
                                     $stmt->execute();
                                     $res = $stmt->get_result();
                                     while ($row = $res->fetch_object()) {
-                                        $isLow = $row->stock_qty <= $row->min_qty;
-                                        $status = $isLow ? '<span class="text-danger font-weight-bold">Low Stock</span>' : '<span class="text-success">OK</span>';
+                                        if ($row->stock_qty == 0) {
+                                            $status = '<span class="text-danger font-weight-bold">Out of Stock</span>';
+                                            $rowClass = 'table-danger';
+                                        } elseif ($row->stock_qty <= $row->min_qty) {
+                                            $status = '<span class="text-warning font-weight-bold">Low Stock</span>';
+                                            $rowClass = 'table-warning';
+                                        } else {
+                                            $status = '<span class="text-success">OK</span>';
+                                            $rowClass = '';
+                                        }
 
-                                        $status = $isLow ? '<span class="text-danger font-weight-bold">Low Stock</span>' : '<span class="text-success">OK</span>';
-                                        echo "<tr class='" . ($isLow ? 'table-danger' : '') . "'>
+                                        echo "<tr class='{$rowClass}'>
                                                 <td>{$row->prod_name}</td>
                                                 <td>{$row->stock_qty}</td>
                                                 <td>{$row->min_qty}</td>

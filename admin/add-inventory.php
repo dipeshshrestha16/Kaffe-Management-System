@@ -12,16 +12,13 @@ if (isset($_POST['add_inventory'])) {
     $stmt = $mysqli->prepare("INSERT INTO rpos_inventory (prod_id, stock_qty, min_qty) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_qty = ?, min_qty = ?");
     $stmt->bind_param('siiii', $prod_id, $stock_qty, $min_qty, $stock_qty, $min_qty);
     if ($stmt->execute()) {
-        $_SESSION['success'] = "Inventory updated successfully";
-        header("Location: inventory.php"); // Don't use refresh unless needed
-        exit(); // Important to stop script after header
+        $_SESSION['success'] = "Inventory updated successfully!";
     } else {
-        $_SESSION['err'] = "Failed to add inventory";
+        $_SESSION['err'] = "Failed to add inventory.";
     }
 }
 
 require_once('includes/header.php');
-
 ?>
 
 <body>
@@ -32,8 +29,7 @@ require_once('includes/header.php');
             class="header pb-8 pt-5 pt-md-8">
             <span class="mask bg-gradient-dark opacity-8"></span>
             <div class="container-fluid">
-                <div class="header-body">
-                </div>
+                <div class="header-body"></div>
             </div>
         </div>
 
@@ -86,7 +82,37 @@ require_once('includes/header.php');
             <?php require_once('includes/footer.php'); ?>
         </div>
     </div>
+
     <?php require_once('includes/scripts.php'); ?>
+
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (isset($_SESSION['success'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '<?= $_SESSION['success'] ?>',
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = "inventory.php";
+            });
+        </script>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['err'])): ?>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: '<?= $_SESSION['err'] ?>'
+            });
+        </script>
+        <?php unset($_SESSION['err']); ?>
+    <?php endif; ?>
 </body>
 
 </html>
